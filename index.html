@@ -1,159 +1,181 @@
-import React, { useState } from 'react';
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Symbolic Matrix Determinant Calculator</title>
+    <script src="https://unpkg.com/react@17/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@17/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/babel-standalone@6/babel.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body>
+    <div id="root"></div>
+    <script type="text/babel">
+        // SymbolicTerm class
+        class SymbolicTerm {
+            constructor(coefficient = 1, variables = {}) {
+                this.coefficient = coefficient;
+                this.variables = variables;
+            }
 
-class SymbolicTerm {
-  constructor(coefficient = 1, variables = {}) {
-    this.coefficient = coefficient;
-    this.variables = variables;
-  }
+            multiply(other) {
+                const newCoefficient = this.coefficient * other.coefficient;
+                const newVariables = { ...this.variables };
+                for (const [variable, power] of Object.entries(other.variables)) {
+                    newVariables[variable] = (newVariables[variable] || 0) + power;
+                }
+                return new SymbolicTerm(newCoefficient, newVariables);
+            }
 
-  multiply(other) {
-    const newCoefficient = this.coefficient * other.coefficient;
-    const newVariables = { ...this.variables };
-    for (const [variable, power] of Object.entries(other.variables)) {
-      newVariables[variable] = (newVariables[variable] || 0) + power;
-    }
-    return new SymbolicTerm(newCoefficient, newVariables);
-  }
-
-  toString() {
-    let result = this.coefficient === 1 ? '' : (this.coefficient === -1 ? '-' : this.coefficient);
-    for (const [variable, power] of Object.entries(this.variables)) {
-      if (power !== 0) {
-        result += variable;
-        if (power !== 1) {
-          result += '^' + power;
+            toString() {
+                let result = this.coefficient === 1 ? '' : (this.coefficient === -1 ? '-' : this.coefficient);
+                for (const [variable, power] of Object.entries(this.variables)) {
+                    if (power !== 0) {
+                        result += variable;
+                        if (power !== 1) {
+                            result += '^' + power;
+                        }
+                    }
+                }
+                return result || '1';
+            }
         }
-      }
-    }
-    return result || '1';
-  }
-}
 
-class SymbolicExpression {
-  constructor(terms = []) {
-    this.terms = terms;
-  }
+        // SymbolicExpression class
+        class SymbolicExpression {
+            constructor(terms = []) {
+                this.terms = terms;
+            }
 
-  add(other) {
-    return new SymbolicExpression([...this.terms, ...other.terms]);
-  }
+            add(other) {
+                return new SymbolicExpression([...this.terms, ...other.terms]);
+            }
 
-  subtract(other) {
-    return this.add(other.negate());
-  }
+            subtract(other) {
+                return this.add(other.negate());
+            }
 
-  negate() {
-    return new SymbolicExpression(this.terms.map(term => new SymbolicTerm(-term.coefficient, term.variables)));
-  }
+            negate() {
+                return new SymbolicExpression(this.terms.map(term => new SymbolicTerm(-term.coefficient, term.variables)));
+            }
 
-  toString() {
-    if (this.terms.length === 0) return '0';
-    return this.terms.map(term => term.toString()).join(' + ').replace(/\+ -/g, '- ');
-  }
-}
+            toString() {
+                if (this.terms.length === 0) return '0';
+                return this.terms.map(term => term.toString()).join(' + ').replace(/\+ -/g, '- ');
+            }
+        }
 
-function calculateDeterminant(matrix) {
-  const n = matrix.length;
-  if (n === 1) {
-    return matrix[0][0];
-  }
-  if (n === 2) {
-    return matrix[0][0].multiply(matrix[1][1]).subtract(matrix[0][1].multiply(matrix[1][0]));
-  }
-  let det = new SymbolicExpression();
-  for (let j = 0; j < n; j++) {
-    const subMatrix = matrix.slice(1).map(row => [...row.slice(0, j), ...row.slice(j + 1)]);
-    const subDet = calculateDeterminant(subMatrix);
-    const term = matrix[0][j].multiply(subDet);
-    det = det.add(j % 2 === 0 ? term : term.negate());
-  }
-  return det;
-}
+        // calculateDeterminant function
+        function calculateDeterminant(matrix) {
+            const n = matrix.length;
+            if (n === 1) {
+                return matrix[0][0];
+            }
+            if (n === 2) {
+                return matrix[0][0].multiply(matrix[1][1]).subtract(matrix[0][1].multiply(matrix[1][0]));
+            }
+            let det = new SymbolicExpression();
+            for (let j = 0; j < n; j++) {
+                const subMatrix = matrix.slice(1).map(row => [...row.slice(0, j), ...row.slice(j + 1)]);
+                const subDet = calculateDeterminant(subMatrix);
+                const term = matrix[0][j].multiply(subDet);
+                det = det.add(j % 2 === 0 ? term : term.negate());
+            }
+            return det;
+        }
 
-const SymbolicMatrixCalculator = () => {
-  const [matrixSize, setMatrixSize] = useState(2);
-  const [matrix, setMatrix] = useState(Array(5).fill().map(() => Array(5).fill('')));
-  const [result, setResult] = useState('');
+        // SymbolicMatrixCalculator component
+        const SymbolicMatrixCalculator = () => {
+            const [matrixSize, setMatrixSize] = React.useState(2);
+            const [matrix, setMatrix] = React.useState(Array(5).fill().map(() => Array(5).fill('')));
+            const [result, setResult] = React.useState('');
 
-  const handleSizeChange = (e) => {
-    setMatrixSize(parseInt(e.target.value));
-    setResult('');
-  };
+            const handleSizeChange = (e) => {
+                setMatrixSize(parseInt(e.target.value));
+                setResult('');
+            };
 
-  const handleInputChange = (row, col, value) => {
-    const newMatrix = [...matrix];
-    newMatrix[row][col] = value;
-    setMatrix(newMatrix);
-    setResult('');
-  };
+            const handleInputChange = (row, col, value) => {
+                const newMatrix = [...matrix];
+                newMatrix[row][col] = value;
+                setMatrix(newMatrix);
+                setResult('');
+            };
 
-  const calculateDeterminantSign = () => {
-    const symbolicMatrix = matrix.slice(0, matrixSize).map(row => 
-      row.slice(0, matrixSize).map(cell => {
-        if (cell === '+' || cell === '') return new SymbolicExpression([new SymbolicTerm(1, {[`a${row}${col}`]: 1})]);
-        if (cell === '-') return new SymbolicExpression([new SymbolicTerm(-1, {[`a${row}${col}`]: 1})]);
-        if (cell === '0') return new SymbolicExpression();
-        return new SymbolicExpression([new SymbolicTerm(1, {[cell]: 1})]);
-      })
-    );
+            const calculateDeterminantSign = () => {
+                const symbolicMatrix = matrix.slice(0, matrixSize).map((row, i) => 
+                    row.slice(0, matrixSize).map((cell, j) => {
+                        const variable = `a${i+1}${j+1}`;
+                        if (cell === '+' || cell === '') return new SymbolicExpression([new SymbolicTerm(1, {[variable]: 1})]);
+                        if (cell === '-') return new SymbolicExpression([new SymbolicTerm(-1, {[variable]: 1})]);
+                        if (cell === '0') return new SymbolicExpression();
+                        // For any other input, treat it as a variable name
+                        return new SymbolicExpression([new SymbolicTerm(1, {[cell]: 1})]);
+                    })
+                );
 
-    const det = calculateDeterminant(symbolicMatrix);
-    setResult(`The symbolic determinant is: ${det.toString()}\n\nThe sign cannot be definitively determined without knowing the relative magnitudes of the terms.`);
-  };
+                const det = calculateDeterminant(symbolicMatrix);
+                setResult(`The symbolic determinant is: ${det.toString()}\n\nThe sign cannot be definitively determined without knowing the relative magnitudes of the terms.`);
+            };
 
-  return (
-    <div className="p-4 max-w-md mx-auto">
-      <h1 className="text-2xl font-bold mb-4">Symbolic Matrix Determinant Calculator</h1>
-      <div className="mb-4">
-        <label className="block mb-2">Matrix Size:</label>
-        <select 
-          value={matrixSize} 
-          onChange={handleSizeChange}
-          className="w-full p-2 border rounded"
-        >
-          <option value={2}>2x2</option>
-          <option value={3}>3x3</option>
-          <option value={4}>4x4</option>
-          <option value={5}>5x5</option>
-        </select>
-      </div>
-      <div className="mb-4">
-        <table className="w-full">
-          <tbody>
-            {[...Array(matrixSize)].map((_, row) => (
-              <tr key={row}>
-                {[...Array(matrixSize)].map((_, col) => (
-                  <td key={col} className="p-1">
-                    <div className="flex items-center">
-                      <span className="mr-2 text-sm">A<sub>{row + 1}{col + 1}</sub></span>
-                      <input
-                        type="text"
-                        value={matrix[row][col]}
-                        onChange={(e) => handleInputChange(row, col, e.target.value)}
-                        className="w-full p-2 border rounded"
-                        placeholder="+, -, 0, or symbol"
-                      />
+            return (
+                <div className="p-4 max-w-md mx-auto">
+                    <h1 className="text-2xl font-bold mb-4">Symbolic Matrix Determinant Calculator</h1>
+                    <div className="mb-4">
+                        <label className="block mb-2">Matrix Size:</label>
+                        <select 
+                            value={matrixSize} 
+                            onChange={handleSizeChange}
+                            className="w-full p-2 border rounded"
+                        >
+                            <option value={2}>2x2</option>
+                            <option value={3}>3x3</option>
+                            <option value={4}>4x4</option>
+                            <option value={5}>5x5</option>
+                        </select>
                     </div>
-                  </td>
-                ))}
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-      <button 
-        onClick={calculateDeterminantSign}
-        className="w-full p-2 bg-blue-500 text-white rounded hover:bg-blue-600"
-      >
-        Calculate
-      </button>
-      {result && (
-        <div className="mt-4 p-4 bg-gray-100 rounded">
-          <pre className="whitespace-pre-wrap">{result}</pre>
-        </div>
-      )}
-    </div>
-  );
-};
+                    <div className="mb-4">
+                        <table className="w-full">
+                            <tbody>
+                                {[...Array(matrixSize)].map((_, row) => (
+                                    <tr key={row}>
+                                        {[...Array(matrixSize)].map((_, col) => (
+                                            <td key={col} className="p-1">
+                                                <div className="flex items-center">
+                                                    <span className="mr-2 text-sm">A<sub>{row + 1}{col + 1}</sub></span>
+                                                    <input
+                                                        type="text"
+                                                        value={matrix[row][col]}
+                                                        onChange={(e) => handleInputChange(row, col, e.target.value)}
+                                                        className="w-full p-2 border rounded"
+                                                        placeholder="+, -, 0, or symbol"
+                                                    />
+                                                </div>
+                                            </td>
+                                        ))}
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                    <button 
+                        onClick={calculateDeterminantSign}
+                        className="w-full p-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+                    >
+                        Calculate
+                    </button>
+                    {result && (
+                        <div className="mt-4 p-4 bg-gray-100 rounded">
+                            <pre className="whitespace-pre-wrap">{result}</pre>
+                        </div>
+                    )}
+                </div>
+            );
+        };
 
-export default SymbolicMatrixCalculator;
+        // Render the component
+        ReactDOM.render(<SymbolicMatrixCalculator />, document.getElementById('root'));
+    </script>
+</body>
+</html>
