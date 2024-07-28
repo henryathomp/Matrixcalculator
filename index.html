@@ -1,131 +1,139 @@
-import React, { useState } from 'react';
-import { Alert, AlertDescription } from '@/components/ui/alert';
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Matrix Determinant Sign Calculator</title>
+    <script src="https://unpkg.com/react@17/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@17/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/babel-standalone@6/babel.min.js"></script>
+    <style>
+        body { font-family: Arial, sans-serif; line-height: 1.6; padding: 20px; }
+        .container { max-width: 600px; margin: 0 auto; }
+        select, button { width: 100%; padding: 10px; margin: 5px 0; }
+        table { width: 100%; }
+        td { padding: 5px; }
+        .alert { background-color: #f0f0f0; border: 1px solid #ddd; padding: 10px; margin-top: 20px; }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+    <script type="text/babel">
+        const MatrixDeterminantSignCalculator = () => {
+            const [matrixSize, setMatrixSize] = React.useState(2);
+            const [matrix, setMatrix] = React.useState(Array(5).fill().map(() => Array(5).fill('')));
+            const [result, setResult] = React.useState('');
 
-const MatrixDeterminantSignCalculator = () => {
-  const [matrixSize, setMatrixSize] = useState(2);
-  const [matrix, setMatrix] = useState(Array(5).fill().map(() => Array(5).fill('')));
-  const [result, setResult] = useState('');
+            const handleSizeChange = (e) => {
+                setMatrixSize(parseInt(e.target.value));
+                setResult('');
+            };
 
-  const handleSizeChange = (e) => {
-    setMatrixSize(parseInt(e.target.value));
-    setResult('');
-  };
+            const handleInputChange = (row, col, value) => {
+                const newMatrix = [...matrix];
+                newMatrix[row][col] = value;
+                setMatrix(newMatrix);
+                setResult('');
+            };
 
-  const handleInputChange = (row, col, value) => {
-    const newMatrix = [...matrix];
-    newMatrix[row][col] = value;
-    setMatrix(newMatrix);
-    setResult('');
-  };
+            const calculateDeterminantSign = () => {
+                const getSign = (num) => {
+                    if (num === '+') return 1;
+                    if (num === '-') return -1;
+                    if (num === '0') return 0;
+                    return null;
+                };
 
-  const calculateDeterminantSign = () => {
-    const getSign = (num) => {
-      if (num === '+') return 1;
-      if (num === '-') return -1;
-      if (num === '0') return 0;
-      return null; // For empty or invalid inputs
-    };
+                const calculateDeterminant = (m) => {
+                    const n = m.length;
+                    
+                    if (m.flat().some(val => val === null)) return null;
+                    
+                    if (n === 1) return getSign(m[0][0]);
+                    
+                    if (n === 2) {
+                        const [a, b, c, d] = m.flat().map(getSign);
+                        return a * d - b * c;
+                    }
+                    
+                    let det = 0;
+                    let hasUndetermined = false;
+                    for (let j = 0; j < n; j++) {
+                        const subMatrix = m.slice(1).map(row => [...row.slice(0, j), ...row.slice(j + 1)]);
+                        const cofactor = getSign(m[0][j]);
+                        const subDet = calculateDeterminant(subMatrix);
+                        
+                        if (subDet === null) {
+                            hasUndetermined = true;
+                        } else if (cofactor !== 0) {
+                            det += (j % 2 === 0 ? 1 : -1) * cofactor * subDet;
+                        }
+                    }
+                    return hasUndetermined ? null : det;
+                };
 
-    const calculateDeterminant = (m) => {
-      const n = m.length;
-      
-      // Check for any undetermined (null) values
-      if (m.flat().some(val => val === null)) return null;
-      
-      // Base case for 1x1 matrix
-      if (n === 1) return getSign(m[0][0]);
-      
-      // Base case for 2x2 matrix
-      if (n === 2) {
-        const [a, b, c, d] = m.flat().map(getSign);
-        return a * d - b * c;
-      }
-      
-      let det = 0;
-      let hasUndetermined = false;
-      for (let j = 0; j < n; j++) {
-        const subMatrix = m.slice(1).map(row => [...row.slice(0, j), ...row.slice(j + 1)]);
-        const cofactor = getSign(m[0][j]);
-        const subDet = calculateDeterminant(subMatrix);
-        
-        if (subDet === null) {
-          hasUndetermined = true;
-        } else if (cofactor !== 0) {
-          det += (j % 2 === 0 ? 1 : -1) * cofactor * subDet;
-        }
-      }
-      return hasUndetermined ? null : det;
-    };
+                const detSign = calculateDeterminant(matrix.slice(0, matrixSize).map(row => row.slice(0, matrixSize)));
 
-    const detSign = calculateDeterminant(matrix.slice(0, matrixSize).map(row => row.slice(0, matrixSize)));
+                if (detSign === null) {
+                    setResult("The sign of the determinant is undetermined. This could be due to incomplete or conflicting information.");
+                } else if (detSign > 0) {
+                    setResult("The determinant is positive.");
+                } else if (detSign < 0) {
+                    setResult("The determinant is negative.");
+                } else {
+                    setResult("The determinant is zero. The matrix is singular (not invertible).");
+                }
+            };
 
-    if (detSign === null) {
-      setResult("The sign of the determinant is undetermined. This could be due to incomplete or conflicting information.");
-    } else if (detSign > 0) {
-      setResult("The determinant is positive.");
-    } else if (detSign < 0) {
-      setResult("The determinant is negative.");
-    } else {
-      setResult("The determinant is zero. The matrix is singular (not invertible).");
-    }
-  };
-
-  return (
-    <div className="p-4 max-w-md mx-auto">
-      <h1 className="text-2xl font-bold mb-4">Matrix Determinant Sign Calculator</h1>
-      <div className="mb-4">
-        <label className="block mb-2">Matrix Size:</label>
-        <select 
-          value={matrixSize} 
-          onChange={handleSizeChange}
-          className="w-full p-2 border rounded"
-        >
-          <option value={2}>2x2</option>
-          <option value={3}>3x3</option>
-          <option value={4}>4x4</option>
-          <option value={5}>5x5</option>
-        </select>
-      </div>
-      <div className="mb-4">
-        <table className="w-full">
-          <tbody>
-            {[...Array(matrixSize)].map((_, row) => (
-              <tr key={row}>
-                {[...Array(matrixSize)].map((_, col) => (
-                  <td key={col} className="p-1">
-                    <div className="flex items-center">
-                      <span className="mr-2 text-sm">A<sub>{row + 1}{col + 1}</sub></span>
-                      <select
-                        value={matrix[row][col]}
-                        onChange={(e) => handleInputChange(row, col, e.target.value)}
-                        className="w-full p-2 border rounded"
-                      >
-                        <option value="">Select</option>
-                        <option value="+">+</option>
-                        <option value="-">-</option>
-                        <option value="0">0</option>
-                      </select>
+            return (
+                <div className="container">
+                    <h1>Matrix Determinant Sign Calculator</h1>
+                    <div>
+                        <label>Matrix Size:</label>
+                        <select value={matrixSize} onChange={handleSizeChange}>
+                            <option value={2}>2x2</option>
+                            <option value={3}>3x3</option>
+                            <option value={4}>4x4</option>
+                            <option value={5}>5x5</option>
+                        </select>
                     </div>
-                  </td>
-                ))}
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-      <button 
-        onClick={calculateDeterminantSign}
-        className="w-full p-2 bg-blue-500 text-white rounded hover:bg-blue-600"
-      >
-        Calculate
-      </button>
-      {result && (
-        <Alert className="mt-4">
-          <AlertDescription>{result}</AlertDescription>
-        </Alert>
-      )}
-    </div>
-  );
-};
+                    <div>
+                        <table>
+                            <tbody>
+                                {[...Array(matrixSize)].map((_, row) => (
+                                    <tr key={row}>
+                                        {[...Array(matrixSize)].map((_, col) => (
+                                            <td key={col}>
+                                                <div>
+                                                    <span>A<sub>{row + 1}{col + 1}</sub></span>
+                                                    <select
+                                                        value={matrix[row][col]}
+                                                        onChange={(e) => handleInputChange(row, col, e.target.value)}
+                                                    >
+                                                        <option value="">Select</option>
+                                                        <option value="+">+</option>
+                                                        <option value="-">-</option>
+                                                        <option value="0">0</option>
+                                                    </select>
+                                                </div>
+                                            </td>
+                                        ))}
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                    <button onClick={calculateDeterminantSign}>Calculate</button>
+                    {result && (
+                        <div className="alert">
+                            {result}
+                        </div>
+                    )}
+                </div>
+            );
+        };
 
-export default MatrixDeterminantSignCalculator;
+        ReactDOM.render(<MatrixDeterminantSignCalculator />, document.getElementById('root'));
+    </script>
+</body>
+</html>
