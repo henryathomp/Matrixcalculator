@@ -88,13 +88,11 @@ const SymbolicMatrixCalculator = () => {
   };
 
   const calculateDeterminantSign = () => {
-    const symbolicMatrix = matrix.slice(0, matrixSize).map((row, i) => 
-      row.slice(0, matrixSize).map((cell, j) => {
-        const variable = `a${i+1}${j+1}`;
-        if (cell === '+' || cell === '') return new SymbolicExpression([new SymbolicTerm(1, {[variable]: 1})]);
-        if (cell === '-') return new SymbolicExpression([new SymbolicTerm(-1, {[variable]: 1})]);
+    const symbolicMatrix = matrix.slice(0, matrixSize).map(row => 
+      row.slice(0, matrixSize).map(cell => {
+        if (cell === '+' || cell === '') return new SymbolicExpression([new SymbolicTerm(1, {[`a${row}${col}`]: 1})]);
+        if (cell === '-') return new SymbolicExpression([new SymbolicTerm(-1, {[`a${row}${col}`]: 1})]);
         if (cell === '0') return new SymbolicExpression();
-        // For any other input, treat it as a variable name
         return new SymbolicExpression([new SymbolicTerm(1, {[cell]: 1})]);
       })
     );
